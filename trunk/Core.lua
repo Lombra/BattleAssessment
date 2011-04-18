@@ -2,8 +2,9 @@
 local BUTTON_HEIGHT = 18
 
 local combatLog = {}
+local headers = {}
 
-local addon = CreateFrame("Frame", nil, UIParent, "InsetFrameTemplate")
+local addon = CreateFrame("Frame", "BattleAssessmentFrame", UIParent, "InsetFrameTemplate")
 addon:EnableMouse(true)
 addon:SetToplevel(true)
 addon:SetSize(1024, (NUM_ROWS + 1) * (BUTTON_HEIGHT) + 8)
@@ -28,19 +29,48 @@ local close = CreateFrame("Button", nil, addon, "UIPanelCloseButton")
 close:SetPoint("TOPRIGHT")
 
 
-local sortBy = 1
+local sortBy = 0
 
 local function argSort(a, b)
+	-- print(a, b)
+	if not (a and b) or a == b then return end
+	-- reverse sort if negative value
+	if sortBy < 0 then
+		a, b = b, a
+	end
+	local sortBy = abs(sortBy)
 	if a[sortBy] == b[sortBy] then
-		return a[1] < b[1]
+		return a[0] < b[0]--a[1] < b[1]
 	else
-		return type(a[sortBy]) ~= type(b[sortBy]) or a[sortBy] < b[sortBy]
+		return (type(a[sortBy]) == type(b[sortBy])) and (a[sortBy] < b[sortBy]) or (type(a[sortBy]) < type(b[sortBy]))--not a[sortBy]
 	end
 end
 
 local function onClick(self)
-	sortBy = self:GetID()
+	local id = self:GetID()
+	if abs(sortBy) > 0 then
+		headers[abs(sortBy)].arrow:Hide()
+	end
+	if sortBy == id then
+		sortBy = -id
+	elseif sortBy == -id then
+		sortBy = 0
+	else
+		sortBy = id
+	end
+	local arrow = headers[id].arrow
+	if abs(sortBy) == id then
+		arrow:Show()
+		if sortBy < 0 then
+			arrow:SetTexCoord(0, 1, 0.5, 1)
+		else
+			arrow:SetTexCoord(0, 1, 0, 0.5)
+		end
+	else
+		arrow:Hide()
+	end
 	sort(combatLog, argSort)
+	PlaySound("igMainMenuOptionCheckBoxOn")
 	addon:Update()
 end
 
@@ -75,31 +105,15 @@ local function createColumnHeader(parent)
 	highlight:SetTexture("Interface\\PaperDollInfoFrame\\UI-Character-Tab-Highlight")
 	btn:SetHighlightTexture(highlight, "ADD")
 	
+	local sortArrow = btn:CreateTexture()
+	sortArrow:SetSize(16, 8)
+	sortArrow:SetPoint("RIGHT", -8, 0)
+	sortArrow:SetTexture([[Interface\PaperDollInfoFrame\StatSortArrows]])
+	sortArrow:Hide()
+	btn.arrow = sortArrow
+	
 	return btn
 end
-
--- <Button name="WhoFrameColumnHeaderTemplate" virtual="true">
-	-- <Size>
-		-- <AbsDimension x="10" y="24"/>
-	-- </Size>
-	-- <Scripts>
-		-- <OnClick>
-			-- if ( self.sortType ) then
-				-- SortWho(self.sortType);
-			-- end
-			-- PlaySound("igMainMenuOptionCheckBoxOn");
-		-- </OnClick>
-	-- </Scripts>
-	-- <ButtonText>
-		-- <Anchors>
-			-- <Anchor point="LEFT">
-				-- <Offset>
-					-- <AbsDimension x="8" y="0"/>
-				-- </Offset>
-			-- </Anchor>
-		-- </Anchors>
-	-- </ButtonText>
--- </Button>
 
 local argWidth = {
 	[5] = 96,
@@ -124,12 +138,9 @@ local argNames = {
 	"destFlags",
 }
 
-local headers = {}
-
 for i = 1, 20 do
 	local btn = createColumnHeader(addon)
 	btn:SetID(i)
-	-- btn:SetJustifyH("LEFT")
 	btn:SetWidth((argWidth[i] or 128) + 2)
 	btn:SetHeight(24)
 	if i == 1 then
@@ -137,9 +148,8 @@ for i = 1, 20 do
 	else
 		btn:SetPoint("LEFT", headers[i - 1], "RIGHT", -2, 0)
 	end
-	btn:SetText(argNames[i])
+	btn:SetText(argNames[i] or "arg"..i)
 	headers[i] = btn
-	-- rows[0] = btn
 end
 
 local function createRow()
@@ -199,7 +209,7 @@ local numEvents = 0
 addon:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED")
 addon:SetScript("OnEvent", function(self, event, ...)
 	numEvents = numEvents + 1
-	combatLog[numEvents] = {...}
+	combatLog[numEvents] = {[0] = numEvents, ...}
 	for i = 1, select("#", ...) do
 		local arg = select(i, ...)
 		if type(arg) == "string" then
