@@ -14,7 +14,7 @@ addon:SetPoint("CENTER")
 	-- tile = true,
 -- })
 
--- addon:Hide()
+addon:Hide()
 
 local bg = addon:CreateTexture(nil, "BACKGROUND")
 bg:SetSize(64, 64)
@@ -116,20 +116,21 @@ local function createColumnHeader(parent)
 end
 
 local argWidth = {
-	[5] = 96,
-	[8] = 96,
-	[9] = 64,
-	[15] = 64,
+	[6] = 96,
+	[9] = 96,
+	[10] = 64,
 	[16] = 64,
 	[17] = 64,
-	[18] = 32,
+	[18] = 64,
 	[19] = 32,
 	[20] = 32,
+	[21] = 32,
 }
 
 local argNames = {
 	"timeStamp",
 	"event",
+	"hideCaster",
 	"sourceGUID",
 	"sourceName",
 	"sourceFlags",
@@ -138,7 +139,7 @@ local argNames = {
 	"destFlags",
 }
 
-for i = 1, 20 do
+for i = 1, 21 do
 	local btn = createColumnHeader(addon)
 	btn:SetID(i)
 	btn:SetWidth((argWidth[i] or 128) + 2)
