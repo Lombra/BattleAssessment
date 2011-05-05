@@ -41,7 +41,7 @@ local function argSort(a, b)
 	end
 	local sortBy = abs(sortBy)
 	if a[sortBy] == b[sortBy] then
-		return a[0] < b[0]--a[1] < b[1]
+		return a[0] < b[0]
 	else
 		return (type(a[sortBy]) == type(b[sortBy])) and (a[sortBy] < b[sortBy]) or (type(a[sortBy]) < type(b[sortBy]))--not a[sortBy]
 	end
