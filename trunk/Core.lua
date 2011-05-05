@@ -1,4 +1,5 @@
 ﻿local NUM_ROWS = 30
+local NUM_COLUMNS = 21
 local BUTTON_HEIGHT = 18
 
 local combatLog = {}
@@ -139,7 +140,7 @@ local argNames = {
 	"destFlags",
 }
 
-for i = 1, 21 do
+for i = 1, NUM_COLUMNS do
 	local btn = createColumnHeader(addon)
 	btn:SetID(i)
 	btn:SetWidth((argWidth[i] or 128) + 2)
@@ -183,7 +184,7 @@ for i = 1, NUM_ROWS do
 		row:SetPoint("TOP", rows[i - 1], "BOTTOM")
 	end
 	local line = {}
-	for y = 1, 20 do
+	for y = 1, NUM_COLUMNS do
 		local btn = createCell(row)
 		-- btn:SetJustifyH("LEFT")
 		btn:SetWidth(argWidth[y] or 128)
