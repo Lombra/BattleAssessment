@@ -1,4 +1,4 @@
-﻿## Interface: 40100
+﻿## Interface: 40200
 ## Title: BattleAssessment
 ## Version: 1.0.0
 ## Notes: Detailed combat log event analysis.
