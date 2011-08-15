@@ -1,19 +1,23 @@
 ﻿local NUM_ROWS = 30
-local NUM_COLUMNS = 21
+local NUM_COLUMNS = 23
 local BUTTON_HEIGHT = 18
+local NUM_BASE_ARGS = 11
 
 local combatLog = {}
+local filters = {}
+local results = {}
 local headers = {}
 
 local addon = CreateFrame("Frame", "BattleAssessmentFrame", UIParent, "InsetFrameTemplate")
 addon:EnableMouse(true)
 addon:SetToplevel(true)
-addon:SetSize(1024, (NUM_ROWS + 1) * (BUTTON_HEIGHT) + 8)
+addon:SetHeight((NUM_ROWS + 1) * BUTTON_HEIGHT + 32)
 addon:SetPoint("CENTER")
 -- addon:SetBackdrop({
 	-- bgFile = [[Interface\FrameGeneral\UI-Background-Marble]],
 	-- tile = true,
 -- })
+addon:SetScript("OnShow", function(self) self:Update() end)
 
 addon:Hide()
 
@@ -29,6 +33,26 @@ bg:SetVertTile(true)
 local close = CreateFrame("Button", nil, addon, "UIPanelCloseButton")
 close:SetPoint("TOPRIGHT")
 
+
+SLASH_BATTLE_ASSESSMENT1 = "/ba"
+SlashCmdList["BATTLE_ASSESSMENT"] = function()
+	(addon:IsShown() and addon.Hide or addon.Show)(addon)
+end
+
+
+local start = CreateFrame("Button", nil, addon)
+start:SetSize(24, 24)
+start:SetPoint("TOPLEFT", 8, -4)
+start:SetNormalTexture([[Interface\Buttons\UI-SpellbookIcon-NextPage-Up]])
+start:SetHighlightTexture([[Interface\Buttons\UI-Common-MouseHilight]], "ADD")
+start:SetScript("OnClick", function(self) addon:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED") end)
+
+local stop = CreateFrame("Button", nil, addon)
+stop:SetSize(24, 24)
+stop:SetPoint("LEFT", start, "RIGHT", 4, 0)
+stop:SetNormalTexture([[Interface\TimeManager\PauseButton]])
+stop:SetHighlightTexture([[Interface\Buttons\UI-Common-MouseHilight]], "ADD")
+stop:SetScript("OnClick", function(self) addon:UnregisterEvent("COMBAT_LOG_EVENT_UNFILTERED") end)
 
 local sortBy = 0
 
@@ -63,9 +87,9 @@ local function onClick(self)
 	if abs(sortBy) == id then
 		arrow:Show()
 		if sortBy < 0 then
-			arrow:SetTexCoord(0, 1, 0.5, 1)
+			arrow:SetTexCoord(0, 1, 0.5, 0.9375)
 		else
-			arrow:SetTexCoord(0, 1, 0, 0.5)
+			arrow:SetTexCoord(0, 1, 0.0625, 0.5)
 		end
 	else
 		arrow:Hide()
@@ -117,16 +141,27 @@ local function createColumnHeader(parent)
 end
 
 local argWidth = {
+	[3] = 96,
 	[6] = 96,
-	[9] = 96,
-	[10] = 64,
-	[16] = 64,
-	[17] = 64,
+	[7] = 96,
+	[10] = 96,
+	[11] = 96,
+	[12] = 64,
 	[18] = 64,
-	[19] = 32,
-	[20] = 32,
+	[19] = 64,
+	[20] = 64,
 	[21] = 32,
+	[22] = 32,
+	[23] = 32,
 }
+
+do
+	local width = 0
+	for i = 1, NUM_BASE_ARGS do
+		width = width + (argWidth[i] or 128) + 2
+	end
+	addon:SetWidth(width)
+end
 
 local argNames = {
 	"timeStamp",
@@ -135,9 +170,11 @@ local argNames = {
 	"sourceGUID",
 	"sourceName",
 	"sourceFlags",
+	"sourceFlags2",
 	"destGUID",
 	"destName",
 	"destFlags",
+	"destFlags2",
 }
 
 for i = 1, NUM_COLUMNS do
@@ -146,7 +183,7 @@ for i = 1, NUM_COLUMNS do
 	btn:SetWidth((argWidth[i] or 128) + 2)
 	btn:SetHeight(24)
 	if i == 1 then
-		btn:SetPoint("TOPLEFT", 8, -4)
+		btn:SetPoint("TOPLEFT", 4, -32)
 	else
 		btn:SetPoint("LEFT", headers[i - 1], "RIGHT", -2, 0)
 	end
@@ -157,18 +194,43 @@ end
 local function createRow()
 end
 
+local function onClick(self)
+	local filter = results[self.index][self.column]
+	if filters[self.column] == filter then
+		filters[self.column] = nil
+		headers[self.column]:SetNormalFontObject("GameFontNormalSmall")
+	else
+		filters[self.column] = filter
+		headers[self.column]:SetNormalFontObject("GameFontGreenSmall")
+	end
+	addon:Update()
+end
+
 local function createCell(parent)
 	local btn = CreateFrame("Button", nil, parent)
 	btn:SetNormalFontObject("GameFontHighlightSmall")
 	btn:SetHighlightFontObject("GameFontGreenSmall")
+	btn:SetScript("OnClick", onClick)
 	
 	-- local text = btn:CreateFontString(nil, "GameFontHighlightSmall")
 	-- text:SetAllPoints()
-	-- btn:GetFontString():SetJustifyH("LEFT")
 	-- text:SetJustifyH("LEFT")
 	-- btn:SetFontString(text)
 	
 	return btn
+end
+
+local function updateRow(self, index)
+	local data = results[index]
+	for column = 1, NUM_COLUMNS do
+		local arg = data[column]
+		if type(arg) == "string" then
+			-- arg = format("%q", arg)
+		end
+		self[column]:SetText(arg)
+		self[column].index = index
+	end
+	-- self.index = index
 end
 
 local rows = {}
@@ -183,10 +245,10 @@ for i = 1, NUM_ROWS do
 	else
 		row:SetPoint("TOP", rows[i - 1], "BOTTOM")
 	end
+	row.Update = updateRow
 	local line = {}
 	for y = 1, NUM_COLUMNS do
 		local btn = createCell(row)
-		-- btn:SetJustifyH("LEFT")
 		btn:SetWidth(argWidth[y] or 128)
 		btn:SetHeight(BUTTON_HEIGHT)
 		if y == 1 then
@@ -194,6 +256,7 @@ for i = 1, NUM_ROWS do
 		else
 			btn:SetPoint("LEFT", row[y - 1], "RIGHT")
 		end
+		btn.column = y
 		line[y] = btn
 		row[y] = btn
 	end
@@ -206,35 +269,78 @@ for i = 1, NUM_ROWS do
 	rows[i].cells = line
 end
 
+local scroll = CreateFrame("ScrollFrame", "BattleAssessmentScroll", addon, "FauxScrollFrameTemplate")
+scroll:SetAllPoints()
+scroll:SetScript("OnVerticalScroll", function(self, offset) FauxScrollFrame_OnVerticalScroll(self, offset, BUTTON_HEIGHT, scroll.Update) end)
+
+function scroll:Update()
+	local size = #results
+	FauxScrollFrame_Update(self, size, NUM_ROWS, BUTTON_HEIGHT)
+	
+	local offset = FauxScrollFrame_GetOffset(self)
+	
+	for line = 1, NUM_ROWS do
+		local row = rows[line]
+		local lineplusoffset = line + offset
+		if lineplusoffset <= size then
+			row:Update(lineplusoffset)
+			row:Show()
+		else
+			row:Hide()
+		end
+	end
+end
+
 local numEvents = 0
 
-addon:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED")
+-- addon:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED")
 addon:SetScript("OnEvent", function(self, event, ...)
 	numEvents = numEvents + 1
 	combatLog[numEvents] = {[0] = numEvents, ...}
-	for i = 1, select("#", ...) do
-		local arg = select(i, ...)
+	-- for i = 1, select("#", ...) do
+		-- local arg = select(i, ...)
+		-- if type(arg) == "string" then
+			-- arg = format("%q", arg)
+		-- end
+		-- rows[numEvents][i]:SetText(arg)
+	-- end
+	-- if numEvents == NUM_ROWS then
+		-- self:UnregisterEvent(event)
+	-- end
+	self:Update()
+end)
+
+function addon:UpdateRow(row)
+	local v = combatLog[row]
+	row = rows[row]
+	for column = 1, #v do
+		local arg = v[column]
 		if type(arg) == "string" then
 			arg = format("%q", arg)
 		end
-		rows[numEvents][i]:SetText(arg)
+		row[column]:SetText(arg)
 	end
-	if numEvents == NUM_ROWS then
-		self:UnregisterEvent(event)
-	end
-end)
-
+end
 
 function addon:Update()
-	for row = 1, #combatLog do
-		local v = combatLog[row]
-		row = rows[row]
-		for column = 1, #v do
-			local arg = v[column]
-			if type(arg) == "string" then
-				arg = format("%q", arg)
+	if not self:IsShown() then
+		return
+	end
+	wipe(results)
+	for i, v in ipairs(combatLog) do
+		local include = true
+		for arg, filter in pairs(filters) do
+			if v[arg] ~= filter then
+				include = false
+				break
 			end
-			row[column]:SetText(arg)
+		end
+		if include then
+			tinsert(results, v)
 		end
 	end
+	scroll:Update()
+	-- for row = 1, #combatLog do
+		-- self:UpdateRow(row)
+	-- end
 end
