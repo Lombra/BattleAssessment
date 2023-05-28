@@ -12,6 +12,15 @@ SlashCmdList["BATTLE_ASSESSMENT"] = function()
 	ToggleFrame(BattleAssessment.ui)
 end
 
+AddonCompartmentFrame:RegisterAddon({
+	text = "BattleAssessment",
+	icon = [[Interface\Icons\Ability_Racial_CombatAnalysis]],
+	notCheckable = true,
+	func = function()
+		ToggleFrame(BattleAssessment.ui)
+	end,
+})
+
 
 function BattleAssessment:AddCombatEvent(...)
 	table.insert(combatLog, BattleAssessment:Process(...))
