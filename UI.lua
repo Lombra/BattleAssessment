@@ -149,18 +149,6 @@ end
 
 local function updateRow(self, index)
 	local data = results[index]
-	data.timestamp = data[1]
-	data.eventType = data[2]
-	data.sourceGUID = data[4]
-	data.sourceName = data[5]
-	data.sourceFlags = data[6]
-	data.destGUID = data[8]
-	data.destName = data[9]
-	data.destFlags = data[10]
-	if strsub(data.eventType, 1, 5) == "SPELL" then
-		data.spellID = data[12]
-		data.spellName = data[13]
-	end
 	self.timestamp:SetText(date("%X", data.timestamp)..strsub(format("%.3f", data.timestamp % 1), 2))
 	self.eventType:SetText(data.eventType)
 	self.source:SetText(data.sourceName)
@@ -176,6 +164,7 @@ local function updateRow(self, index)
 		self.target.text:SetTextColor(1.0, 1.0, 1.0)
 	end
 	self.spell:SetText(data.spellName)
+	self.detail:SetText(data.missType and _G["ACTION_SPELL_MISSED_"..data.missType] or data.amount)
 	-- self.index = index
 
 	for i, cell in ipairs(self.cells) do

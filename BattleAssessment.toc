@@ -6,4 +6,5 @@
 ## RequiredDeps: Libra
 
 Core.lua
+EventArgsProcessor.lua
 UI.lua

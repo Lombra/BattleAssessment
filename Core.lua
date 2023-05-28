@@ -14,7 +14,7 @@ end
 
 
 function BattleAssessment:AddCombatEvent(...)
-	table.insert(combatLog, { ... })
+	table.insert(combatLog, BattleAssessment:Process(...))
 end
 
 function BattleAssessment:FetchCombatEvents()
