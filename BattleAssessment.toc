@@ -1,7 +1,8 @@
-## Interface: 40200
+﻿## Interface: 100100
 ## Title: BattleAssessment
 ## Version: 1.0.0
 ## Notes: Detailed combat log event analysis.
+## Author: Lombra
 
 ## RequiredDeps: Libra
 
