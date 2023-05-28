@@ -17,6 +17,7 @@ addon.Inset:SetPoint("BOTTOMRIGHT", PANEL_INSET_RIGHT_OFFSET, PANEL_INSET_BOTTOM
 addon:SetTitle("BattleAssessment")
 addon:SetScript("OnShow", function(self)
 	PlaySound(SOUNDKIT.IG_CHARACTER_INFO_OPEN)
+	self:FetchCombatEvents()
 	self:Update()
 end)
 addon:SetScript("OnHide", function(self)
@@ -29,20 +30,15 @@ SlashCmdList["BATTLE_ASSESSMENT"] = function()
 	(addon:IsShown() and addon.Hide or addon.Show)(addon)
 end
 
-
-local start = CreateFrame("Button", nil, addon)
-start:SetSize(24, 24)
-start:SetPoint("TOPLEFT", 8, -4)
-start:SetNormalTexture([[Interface\Buttons\UI-SpellbookIcon-NextPage-Up]])
-start:SetHighlightTexture([[Interface\Buttons\UI-Common-MouseHilight]], "ADD")
-start:SetScript("OnClick", function(self) addon:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED") end)
-
-local stop = CreateFrame("Button", nil, addon)
-stop:SetSize(24, 24)
-stop:SetPoint("LEFT", start, "RIGHT", 4, 0)
-stop:SetNormalTexture([[Interface\TimeManager\PauseButton]])
-stop:SetHighlightTexture([[Interface\Buttons\UI-Common-MouseHilight]], "ADD")
-stop:SetScript("OnClick", function(self) addon:UnregisterEvent("COMBAT_LOG_EVENT_UNFILTERED") end)
+local reloadButton = BattleAssessment:CreateButton(addon)
+reloadButton:SetWidth(80)
+reloadButton:SetPoint("TOPLEFT", 16, -32)
+reloadButton:SetText("Reload")
+reloadButton:SetScript("OnClick", function()
+	PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON)
+	self:FetchCombatEvents()
+	self:Update()
+end)
 
 local function createColumnHeader(parent)
 	local btn = CreateFrame("Button", nil, parent)
@@ -251,37 +247,6 @@ function scroll:Update()
 	end
 end
 
-local numEvents = 0
-
--- addon:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED")
-addon:SetScript("OnEvent", function(self, event, ...)
-	numEvents = numEvents + 1
-	combatLog[numEvents] = {[0] = numEvents, ...}
-	-- for i = 1, select("#", ...) do
-		-- local arg = select(i, ...)
-		-- if type(arg) == "string" then
-			-- arg = format("%q", arg)
-		-- end
-		-- rows[numEvents][i]:SetText(arg)
-	-- end
-	-- if numEvents == NUM_ROWS then
-		-- self:UnregisterEvent(event)
-	-- end
-	self:Update()
-end)
-
-function addon:UpdateRow(row)
-	local v = combatLog[row]
-	row = rows[row]
-	for column = 1, #v do
-		local arg = v[column]
-		if type(arg) == "string" then
-			arg = format("%q", arg)
-		end
-		row[column]:SetText(arg)
-	end
-end
-
 function addon:Update()
 	if not self:IsShown() then
 		return
@@ -303,4 +268,14 @@ function addon:Update()
 	-- for row = 1, #combatLog do
 		-- self:UpdateRow(row)
 	-- end
+end
+
+function addon:FetchCombatEvents()
+	wipe(combatLog)
+
+	CombatLogResetFilter()
+	for i = 1, CombatLogGetNumEntries() do
+		CombatLogSetCurrentEntry(i)
+		tinsert(combatLog, { CombatLogGetCurrentEntry() })
+	end
 end
