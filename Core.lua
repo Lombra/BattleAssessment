@@ -6,31 +6,31 @@ local filters = {}
 local results = {}
 local headers = {}
 
-local addon = CreateFrame("Frame", "BattleAssessmentFrame", UIParent, "ButtonFrameTemplate")
-addon:EnableMouse(true)
-addon:SetToplevel(true)
+local frame = CreateFrame("Frame", "BattleAssessmentFrame", UIParent, "ButtonFrameTemplate")
+frame:EnableMouse(true)
+frame:SetToplevel(true)
 addon:SetHeight((NUM_ROWS + 1) * BUTTON_HEIGHT + 32)
-addon:SetPoint("CENTER")
-ButtonFrameTemplate_HidePortrait(addon)
-ButtonFrameTemplate_HideButtonBar(addon)
-addon.Inset:SetPoint("BOTTOMRIGHT", PANEL_INSET_RIGHT_OFFSET, PANEL_INSET_BOTTOM_OFFSET + 2)
-addon:SetTitle("BattleAssessment")
-addon:SetScript("OnShow", function(self)
+frame:SetPoint("CENTER")
+ButtonFrameTemplate_HidePortrait(frame)
+ButtonFrameTemplate_HideButtonBar(frame)
+frame.Inset:SetPoint("BOTTOMRIGHT", PANEL_INSET_RIGHT_OFFSET, PANEL_INSET_BOTTOM_OFFSET + 2)
+frame:SetTitle("BattleAssessment")
+frame:SetScript("OnShow", function(self)
 	PlaySound(SOUNDKIT.IG_CHARACTER_INFO_OPEN)
 	self:FetchCombatEvents()
 	self:Update()
 end)
-addon:SetScript("OnHide", function(self)
+frame:SetScript("OnHide", function(self)
 	PlaySound(SOUNDKIT.IG_CHARACTER_INFO_CLOSE)
 end)
-addon:Hide()
+frame:Hide()
 
 SLASH_BATTLE_ASSESSMENT1 = "/ba"
 SlashCmdList["BATTLE_ASSESSMENT"] = function()
 	(addon:IsShown() and addon.Hide or addon.Show)(addon)
 end
 
-local reloadButton = BattleAssessment:CreateButton(addon)
+local reloadButton = BattleAssessment:CreateButton(frame)
 reloadButton:SetWidth(80)
 reloadButton:SetPoint("TOPLEFT", 16, -32)
 reloadButton:SetText("Reload")
@@ -107,12 +107,12 @@ local columns = {
 }
 
 for i, column in ipairs(columns) do
-	local btn = createColumnHeader(addon.Inset)
+	local btn = createColumnHeader(frame.Inset)
 	btn:SetID(i)
 	btn:SetWidth((column.width or 150) + 2)
 	btn:SetHeight(24)
 	if i == 1 then
-		btn:SetPoint("BOTTOMLEFT", addon.Inset, "TOPLEFT", 4, 0)
+		btn:SetPoint("BOTTOMLEFT", frame.Inset, "TOPLEFT", 4, 0)
 	else
 		btn:SetPoint("LEFT", headers[i - 1], "RIGHT", -2, 0)
 	end
@@ -188,7 +188,7 @@ end
 local rows = {}
 
 for i = 1, NUM_ROWS do
-	local row = CreateFrame("Frame", nil, addon.Inset)
+	local row = CreateFrame("Frame", nil, frame.Inset)
 	row:SetHeight(BUTTON_HEIGHT)
 	row:SetPoint("LEFT", 4, 0)
 	row:SetPoint("RIGHT", -4, 0)
@@ -225,7 +225,7 @@ for i = 1, NUM_ROWS do
 	rows[i].cells = line
 end
 
-local scroll = CreateFrame("ScrollFrame", "BattleAssessmentScroll", addon.Inset, "FauxScrollFrameTemplate")
+local scroll = CreateFrame("ScrollFrame", "BattleAssessmentScroll", frame.Inset, "FauxScrollFrameTemplate")
 scroll:SetAllPoints()
 scroll:SetScript("OnVerticalScroll", function(self, offset) FauxScrollFrame_OnVerticalScroll(self, offset, BUTTON_HEIGHT, scroll.Update) end)
 
@@ -247,7 +247,7 @@ function scroll:Update()
 	end
 end
 
-function addon:Update()
+function frame:Update()
 	if not self:IsShown() then
 		return
 	end
@@ -270,7 +270,7 @@ function addon:Update()
 	-- end
 end
 
-function addon:FetchCombatEvents()
+function frame:FetchCombatEvents()
 	wipe(combatLog)
 
 	CombatLogResetFilter()
