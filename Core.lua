@@ -6,31 +6,23 @@ local filters = {}
 local results = {}
 local headers = {}
 
-local addon = CreateFrame("Frame", "BattleAssessmentFrame", UIParent, "InsetFrameTemplate")
+local addon = CreateFrame("Frame", "BattleAssessmentFrame", UIParent, "ButtonFrameTemplate")
 addon:EnableMouse(true)
 addon:SetToplevel(true)
 addon:SetHeight((NUM_ROWS + 1) * BUTTON_HEIGHT + 32)
 addon:SetPoint("CENTER")
--- addon:SetBackdrop({
-	-- bgFile = [[Interface\FrameGeneral\UI-Background-Marble]],
-	-- tile = true,
--- })
-addon:SetScript("OnShow", function(self) self:Update() end)
-
+ButtonFrameTemplate_HidePortrait(addon)
+ButtonFrameTemplate_HideButtonBar(addon)
+addon.Inset:SetPoint("BOTTOMRIGHT", PANEL_INSET_RIGHT_OFFSET, PANEL_INSET_BOTTOM_OFFSET + 2)
+addon:SetTitle("BattleAssessment")
+addon:SetScript("OnShow", function(self)
+	PlaySound(SOUNDKIT.IG_CHARACTER_INFO_OPEN)
+	self:Update()
+end)
+addon:SetScript("OnHide", function(self)
+	PlaySound(SOUNDKIT.IG_CHARACTER_INFO_CLOSE)
+end)
 addon:Hide()
-
-local bg = addon:CreateTexture(nil, "BACKGROUND")
-bg:SetSize(64, 64)
--- bg:SetAllPoints()
-bg:SetPoint("TOPLEFT")
-bg:SetPoint("BOTTOMRIGHT")
--- bg:SetTexture([[Interface\FrameGeneral\UI-Background-Marble]])
-bg:SetHorizTile(true)
-bg:SetVertTile(true)
-
-local close = CreateFrame("Button", nil, addon, "UIPanelCloseButton")
-close:SetPoint("TOPRIGHT")
-
 
 SLASH_BATTLE_ASSESSMENT1 = "/ba"
 SlashCmdList["BATTLE_ASSESSMENT"] = function()
@@ -119,12 +111,12 @@ local columns = {
 }
 
 for i, column in ipairs(columns) do
-	local btn = createColumnHeader(addon)
+	local btn = createColumnHeader(addon.Inset)
 	btn:SetID(i)
 	btn:SetWidth((column.width or 150) + 2)
 	btn:SetHeight(24)
 	if i == 1 then
-		btn:SetPoint("TOPLEFT", 4, -32)
+		btn:SetPoint("BOTTOMLEFT", addon.Inset, "TOPLEFT", 4, 0)
 	else
 		btn:SetPoint("LEFT", headers[i - 1], "RIGHT", -2, 0)
 	end
@@ -200,7 +192,7 @@ end
 local rows = {}
 
 for i = 1, NUM_ROWS do
-	local row = CreateFrame("Frame", nil, addon)
+	local row = CreateFrame("Frame", nil, addon.Inset)
 	row:SetHeight(BUTTON_HEIGHT)
 	row:SetPoint("LEFT", 4, 0)
 	row:SetPoint("RIGHT", -4, 0)
@@ -237,7 +229,7 @@ for i = 1, NUM_ROWS do
 	rows[i].cells = line
 end
 
-local scroll = CreateFrame("ScrollFrame", "BattleAssessmentScroll", addon, "FauxScrollFrameTemplate")
+local scroll = CreateFrame("ScrollFrame", "BattleAssessmentScroll", addon.Inset, "FauxScrollFrameTemplate")
 scroll:SetAllPoints()
 scroll:SetScript("OnVerticalScroll", function(self, offset) FauxScrollFrame_OnVerticalScroll(self, offset, BUTTON_HEIGHT, scroll.Update) end)
 
