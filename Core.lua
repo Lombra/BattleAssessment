@@ -1,7 +1,5 @@
-﻿local NUM_ROWS = 30
-local NUM_COLUMNS = 23
+local NUM_ROWS = 30
 local BUTTON_HEIGHT = 18
-local NUM_BASE_ARGS = 11
 
 local combatLog = {}
 local filters = {}
@@ -54,55 +52,9 @@ stop:SetNormalTexture([[Interface\TimeManager\PauseButton]])
 stop:SetHighlightTexture([[Interface\Buttons\UI-Common-MouseHilight]], "ADD")
 stop:SetScript("OnClick", function(self) addon:UnregisterEvent("COMBAT_LOG_EVENT_UNFILTERED") end)
 
-local sortBy = 0
-
-local function argSort(a, b)
-	-- print(a, b)
-	if not (a and b) or a == b then return end
-	-- reverse sort if negative value
-	if sortBy < 0 then
-		a, b = b, a
-	end
-	local sortBy = abs(sortBy)
-	if a[sortBy] == b[sortBy] then
-		return a[0] < b[0]
-	else
-		return (type(a[sortBy]) == type(b[sortBy])) and (a[sortBy] < b[sortBy]) or (type(a[sortBy]) < type(b[sortBy]))--not a[sortBy]
-	end
-end
-
-local function onClick(self)
-	local id = self:GetID()
-	if abs(sortBy) > 0 then
-		headers[abs(sortBy)].arrow:Hide()
-	end
-	if sortBy == id then
-		sortBy = -id
-	elseif sortBy == -id then
-		sortBy = 0
-	else
-		sortBy = id
-	end
-	local arrow = headers[id].arrow
-	if abs(sortBy) == id then
-		arrow:Show()
-		if sortBy < 0 then
-			arrow:SetTexCoord(0, 1, 0.5, 0.9375)
-		else
-			arrow:SetTexCoord(0, 1, 0.0625, 0.5)
-		end
-	else
-		arrow:Hide()
-	end
-	sort(combatLog, argSort)
-	PlaySound("igMainMenuOptionCheckBoxOn")
-	addon:Update()
-end
-
 local function createColumnHeader(parent)
 	local btn = CreateFrame("Button", nil, parent)
 	btn:SetNormalFontObject("GameFontNormalSmall")
-	btn:SetScript("OnClick", onClick)
 	
 	local left = btn:CreateTexture(nil, "BACKGROUND")
 	left:SetWidth(5)
@@ -130,78 +82,67 @@ local function createColumnHeader(parent)
 	highlight:SetTexture("Interface\\PaperDollInfoFrame\\UI-Character-Tab-Highlight")
 	btn:SetHighlightTexture(highlight, "ADD")
 	
-	local sortArrow = btn:CreateTexture()
-	sortArrow:SetSize(16, 8)
-	sortArrow:SetPoint("RIGHT", -8, 0)
-	sortArrow:SetTexture([[Interface\PaperDollInfoFrame\StatSortArrows]])
-	sortArrow:Hide()
-	btn.arrow = sortArrow
-	
 	return btn
 end
 
-local argWidth = {
-	[3] = 96,
-	[6] = 96,
-	[7] = 96,
-	[10] = 96,
-	[11] = 96,
-	[12] = 64,
-	[18] = 64,
-	[19] = 64,
-	[20] = 64,
-	[21] = 32,
-	[22] = 32,
-	[23] = 32,
+local columns = {
+	{
+		name = "timestamp",
+		label = "Timestamp",
+		width = 90,
+	},
+	{
+		name = "eventType",
+		label = "Event type",
+	},
+	{
+		name = "source",
+		label = "Source",
+		filterKey = "sourceGUID",
+	},
+	{
+		name = "spell",
+		label = "Spell",
+		filterKey = "spellID",
+		width = 160,
+	},
+	{
+		name = "target",
+		label = "Target",
+		filterKey = "destGUID",
+	},
+	{
+		name = "detail",
+		label = "Details",
+		justifyText = "RIGHT",
+	},
 }
 
-do
-	local width = 0
-	for i = 1, NUM_BASE_ARGS do
-		width = width + (argWidth[i] or 128) + 2
-	end
-	addon:SetWidth(width)
-end
-
-local argNames = {
-	"timeStamp",
-	"event",
-	"hideCaster",
-	"sourceGUID",
-	"sourceName",
-	"sourceFlags",
-	"sourceFlags2",
-	"destGUID",
-	"destName",
-	"destFlags",
-	"destFlags2",
-}
-
-for i = 1, NUM_COLUMNS do
+for i, column in ipairs(columns) do
 	local btn = createColumnHeader(addon)
 	btn:SetID(i)
-	btn:SetWidth((argWidth[i] or 128) + 2)
+	btn:SetWidth((column.width or 150) + 2)
 	btn:SetHeight(24)
 	if i == 1 then
 		btn:SetPoint("TOPLEFT", 4, -32)
 	else
 		btn:SetPoint("LEFT", headers[i - 1], "RIGHT", -2, 0)
 	end
-	btn:SetText(argNames[i] or "arg"..i)
+	btn:SetText(column.label)
 	headers[i] = btn
+	headers[column.name] = btn
 end
 
 local function createRow()
 end
 
 local function onClick(self)
-	local filter = results[self.index][self.column]
-	if filters[self.column] == filter then
-		filters[self.column] = nil
-		headers[self.column]:SetNormalFontObject("GameFontNormalSmall")
+	if filters[self.filterKey] == self.filterValue then
+		filters[self.filterKey] = nil
+		headers[self.columnName]:SetNormalFontObject("GameFontNormalSmall")
 	else
-		filters[self.column] = filter
-		headers[self.column]:SetNormalFontObject("GameFontGreenSmall")
+		filters[self.filterKey] = self.filterValue
+		headers[self.columnName]:SetNormalFontObject("GameFontGreenSmall")
 	end
 	addon:Update()
 end
@@ -222,15 +163,38 @@ end
 
 local function updateRow(self, index)
 	local data = results[index]
-	for column = 1, NUM_COLUMNS do
-		local arg = data[column]
-		if type(arg) == "string" then
-			-- arg = format("%q", arg)
-		end
-		self[column]:SetText(arg)
-		self[column].index = index
+	data.timestamp = data[1]
+	data.eventType = data[2]
+	data.sourceGUID = data[4]
+	data.sourceName = data[5]
+	data.sourceFlags = data[6]
+	data.destGUID = data[8]
+	data.destName = data[9]
+	data.destFlags = data[10]
+	if strsub(data.eventType, 1, 5) == "SPELL" then
+		data.spellID = data[12]
+		data.spellName = data[13]
 	end
+	self.timestamp:SetText(date("%X", data.timestamp)..strsub(format("%.3f", data.timestamp % 1), 2))
+	self.eventType:SetText(data.eventType)
+	self.source:SetText(data.sourceName)
+	if bit.band(data.sourceFlags, COMBATLOG_OBJECT_REACTION_HOSTILE) ~= 0 then
+		self.source.text:SetTextColor(1.0, 0.25, 0.25)
+	else
+		self.source.text:SetTextColor(1.0, 1.0, 1.0)
+		end
+	self.target:SetText(data.destName)
+	if bit.band(data.destFlags, COMBATLOG_OBJECT_REACTION_HOSTILE) ~= 0 then
+		self.target.text:SetTextColor(1.0, 0.25, 0.25)
+	else
+		self.target.text:SetTextColor(1.0, 1.0, 1.0)
+	end
+	self.spell:SetText(data.spellName)
 	-- self.index = index
+
+	for i, cell in ipairs(self.cells) do
+		cell.filterValue = data[cell.filterKey]
+	end
 end
 
 local rows = {}
@@ -247,18 +211,22 @@ for i = 1, NUM_ROWS do
 	end
 	row.Update = updateRow
 	local line = {}
-	for y = 1, NUM_COLUMNS do
+	for y, column in ipairs(columns) do
 		local btn = createCell(row)
-		btn:SetWidth(argWidth[y] or 128)
+		btn:SetWidth(column.width or 150)
 		btn:SetHeight(BUTTON_HEIGHT)
+		btn.text:SetJustifyH(column.justifyText or "LEFT")
 		if y == 1 then
 			btn:SetPoint("LEFT")
 		else
 			btn:SetPoint("LEFT", row[y - 1], "RIGHT")
 		end
 		btn.column = y
+		btn.filterKey = column.filterKey or column.name
+		btn.columnName = column.name
 		line[y] = btn
 		row[y] = btn
+		row[column.name] = btn
 	end
 	if i % 2 == 0 then
 		local bg = row:CreateTexture(nil, "BACKGROUND")
@@ -327,16 +295,16 @@ function addon:Update()
 		return
 	end
 	wipe(results)
-	for i, v in ipairs(combatLog) do
+	for i, combatEvent in ipairs(combatLog) do
 		local include = true
-		for arg, filter in pairs(filters) do
-			if v[arg] ~= filter then
+		for arg, filterValue in pairs(filters) do
+			if combatEvent[arg] ~= filterValue then
 				include = false
 				break
 			end
 		end
 		if include then
-			tinsert(results, v)
+			tinsert(results, combatEvent)
 		end
 	end
 	scroll:Update()
