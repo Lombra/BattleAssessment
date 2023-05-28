@@ -1,7 +1,8 @@
+local _, BattleAssessment = ...
+
 local NUM_ROWS = 30
 local BUTTON_HEIGHT = 18
 
-local combatLog = {}
 local filters = {}
 local results = {}
 local headers = {}
@@ -17,18 +18,13 @@ frame.Inset:SetPoint("BOTTOMRIGHT", PANEL_INSET_RIGHT_OFFSET, PANEL_INSET_BOTTOM
 frame:SetTitle("BattleAssessment")
 frame:SetScript("OnShow", function(self)
 	PlaySound(SOUNDKIT.IG_CHARACTER_INFO_OPEN)
-	self:FetchCombatEvents()
-	self:Update()
+	BattleAssessment:FetchCombatEvents()
+	BattleAssessment:Update()
 end)
 frame:SetScript("OnHide", function(self)
 	PlaySound(SOUNDKIT.IG_CHARACTER_INFO_CLOSE)
 end)
 frame:Hide()
-
-SLASH_BATTLE_ASSESSMENT1 = "/ba"
-SlashCmdList["BATTLE_ASSESSMENT"] = function()
-	(addon:IsShown() and addon.Hide or addon.Show)(addon)
-end
 
 local reloadButton = BattleAssessment:CreateButton(frame)
 reloadButton:SetWidth(80)
@@ -36,9 +32,11 @@ reloadButton:SetPoint("TOPLEFT", 16, -32)
 reloadButton:SetText("Reload")
 reloadButton:SetScript("OnClick", function()
 	PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON)
-	self:FetchCombatEvents()
-	self:Update()
+	BattleAssessment:FetchCombatEvents()
+	BattleAssessment:Update()
 end)
+
+BattleAssessment.ui = frame
 
 local function createColumnHeader(parent)
 	local btn = CreateFrame("Button", nil, parent)
@@ -132,7 +130,7 @@ local function onClick(self)
 		filters[self.filterKey] = self.filterValue
 		headers[self.columnName]:SetNormalFontObject("GameFontGreenSmall")
 	end
-	addon:Update()
+	BattleAssessment:Update()
 end
 
 local function createCell(parent)
@@ -247,12 +245,12 @@ function scroll:Update()
 	end
 end
 
-function frame:Update()
-	if not self:IsShown() then
+function BattleAssessment:Update()
+	if not self.ui:IsShown() then
 		return
 	end
 	wipe(results)
-	for i, combatEvent in ipairs(combatLog) do
+	for i, combatEvent in ipairs(self.combatLog) do
 		local include = true
 		for arg, filterValue in pairs(filters) do
 			if combatEvent[arg] ~= filterValue then
@@ -268,14 +266,4 @@ function frame:Update()
 	-- for row = 1, #combatLog do
 		-- self:UpdateRow(row)
 	-- end
-end
-
-function frame:FetchCombatEvents()
-	wipe(combatLog)
-
-	CombatLogResetFilter()
-	for i = 1, CombatLogGetNumEntries() do
-		CombatLogSetCurrentEntry(i)
-		tinsert(combatLog, { CombatLogGetCurrentEntry() })
-	end
 end
