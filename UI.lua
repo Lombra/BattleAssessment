@@ -36,6 +36,32 @@ reloadButton:SetScript("OnClick", function()
 	BattleAssessment:Update()
 end)
 
+local backdrop = {
+	bgFile = [[Interface\Buttons\WHITE8X8]],
+	insets = {left = 4, right = 4, top = 0, bottom = 4}
+}
+
+local overlay = CreateFrame("Frame", nil, frame, "BackdropTemplate")
+overlay:SetPoint("TOPLEFT", 0, -21)
+overlay:SetPoint("BOTTOMRIGHT")
+overlay:SetFrameStrata("HIGH")
+overlay:SetBackdrop(backdrop)
+overlay:SetBackdropColor(0, 0, 0, 0.8)
+overlay:Hide()
+
+overlay.text = overlay:CreateFontString(nil, nil, "GameFontHighlightLarge")
+overlay.text:SetPoint("CENTER", 0, 24)
+overlay.text:SetText("Loading combat events")
+
+local progressBar = CreateFrame("StatusBar", nil, overlay)
+progressBar:SetSize(200, 15)
+progressBar:SetPoint("CENTER", 0, -10)
+progressBar:SetStatusBarTexture([[Interface\Buttons\WHITE8X8]])
+progressBar:SetStatusBarColor(0.1, 1.0, 0.1)
+
+frame.overlay = overlay
+frame.progressBar = progressBar
+
 BattleAssessment.ui = frame
 
 local function createColumnHeader(parent)

@@ -1,5 +1,7 @@
 local Libra = LibStub("Libra")
 
+local COMBAT_EVENT_FETCH_BATCH_SIZE = 100
+
 local BattleAssessment = Libra:NewAddon(...)
 Libra:Embed(BattleAssessment)
 
@@ -30,8 +32,26 @@ function BattleAssessment:FetchCombatEvents()
 	wipe(combatLog)
 
 	CombatLogResetFilter()
-	for i = 1, CombatLogGetNumEntries() do
-		CombatLogSetCurrentEntry(i)
-		self:AddCombatEvent(CombatLogGetCurrentEntry())
+
+	local isValid = CombatLogSetCurrentEntry(1)
+	if isValid then
+		self.ui.overlay:Show()
+		self.ui.progressBar:SetMinMaxValues(0, CombatLogGetNumEntries())
+		self.ui.progressBar:SetValue(0)
+		self.ui:SetScript("OnUpdate", function(self)
+			local n = 0
+			for i = 1, COMBAT_EVENT_FETCH_BATCH_SIZE do
+				local isValid = CombatLogAdvanceEntry(1, true)
+				if not isValid then
+					self.overlay:Hide()
+					self:SetScript("OnUpdate", nil)
+					BattleAssessment:Update()
+					return
+				end
+				BattleAssessment:AddCombatEvent(CombatLogGetCurrentEntry())
+				n = n + 1
+			end
+			self.progressBar:SetValue(self.progressBar:GetValue() + n)
+		end)
 	end
 end
